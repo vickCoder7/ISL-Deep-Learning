@@ -18,6 +18,8 @@ import warnings
 import time
 warnings.filterwarnings('ignore')
 import pickle
+import csv
+import statistics
 
 # Set random seeds for reproducibility
 np.random.seed(42)
@@ -39,8 +41,8 @@ class SignLanguageVGG16:
         os.makedirs('./models_non_augm_data', exist_ok=True)
         os.makedirs('./images_non_augm_data', exist_ok=True)
 
-    def create_data_generators(self):
-        """Create data generators with augmentation"""
+    def create_data_generators(self, use_augmentation=True, seed=None):
+        """Create data generators with optional training augmentation"""
         print("=" * 60)
         print("CREATING DATA GENERATORS")
         print("=" * 60)
@@ -48,18 +50,23 @@ class SignLanguageVGG16:
         if not os.path.exists(self.data_path):
             raise FileNotFoundError(f"Data path '{self.data_path}' does not exist!")
         
-        # Data augmentation for training
-        train_datagen = ImageDataGenerator(
-            rescale=1./255,
-            rotation_range=20,
-            width_shift_range=0.2,
-            height_shift_range=0.2,
-            shear_range=0.2,
-            zoom_range=0.2,
-            horizontal_flip=False,
-            fill_mode='nearest',
-            validation_split=0.2
-        )
+        if use_augmentation:
+            train_datagen = ImageDataGenerator(
+                rescale=1./255,
+                rotation_range=20,
+                width_shift_range=0.2,
+                height_shift_range=0.2,
+                shear_range=0.2,
+                zoom_range=0.2,
+                horizontal_flip=False,
+                fill_mode='nearest',
+                validation_split=0.2
+            )
+        else:
+            train_datagen = ImageDataGenerator(
+                rescale=1./255,
+                validation_split=0.2
+            )
         
         # Only rescaling for validation
         validation_datagen = ImageDataGenerator(
@@ -74,7 +81,8 @@ class SignLanguageVGG16:
             batch_size=self.batch_size,
             class_mode='categorical',
             subset='training',
-            shuffle=True
+            shuffle=True,
+            seed=seed
         )
 
         self.class_names = list(train_generator.class_indices.keys())
@@ -85,7 +93,8 @@ class SignLanguageVGG16:
             batch_size=self.batch_size,
             class_mode='categorical',
             subset='validation',
-            shuffle=False
+            shuffle=False,
+            seed=seed
         )
         
         print(f"Training samples: {train_generator.samples}")
@@ -137,7 +146,8 @@ class SignLanguageVGG16:
         print("=" * 60)
         return model
 
-    def train_model(self, train_generator, validation_generator, epochs=10):
+    def train_model(self, train_generator, validation_generator, epochs=10,
+                    result_directory='./models_non_augm_data'):
         """Train the VGG16 model"""
         print("=" * 60)
         print("TRAINING MODEL")
@@ -162,7 +172,7 @@ class SignLanguageVGG16:
                 verbose=1
             ),
             ModelCheckpoint(
-                './models_non_augm_data/best_vgg16_model_10-32.keras',
+                os.path.join(result_directory, 'best_vgg16_model_10-32.keras'),
                 monitor='val_accuracy',
                 save_best_only=True,
                 save_weights_only=False,
@@ -179,7 +189,7 @@ class SignLanguageVGG16:
             callbacks=callbacks,
             verbose=1
         )
-        with open('./models_non_augm_data/vgg16_training_history_10-32.pkl', 'wb') as f:
+        with open(os.path.join(result_directory, 'vgg16_training_history_10-32.pkl'), 'wb') as f:
             pickle.dump(self.history.history, f)
 
         # get accuracy and loss
@@ -266,32 +276,125 @@ def main():
     print("====================================")
     
     try:
-        # Initialize the model
-        vgg16_model = SignLanguageVGG16(data_path='../datasets/final/train', img_size=(224, 224), batch_size=32)
-        
-        # Create data generators
-        train_gen, val_gen = vgg16_model.create_data_generators()
+        # seeds = [42, 17, 119]
+        seeds = [17, 119]
+        batch_sizes = [8, 16, 32]
+        paradigms = [
+            ('non_augmented', False, './models_non_augm_data'),
+            ('augmented', True, './models_augm_data'),
+        ]
+        result_fields = [
+            'paradigm',
+            'seed',
+            'train_accuracy',
+            'validation_accuracy',
+            'train_loss',
+            'validation_loss',
+            'training_time_seconds',
+        ]
+        metric_fields = result_fields[2:]
 
-        # Build model
-        model = vgg16_model.build_vgg16_model()
+        for paradigm, use_augmentation, result_directory in paradigms:
+            os.makedirs(result_directory, exist_ok=True)
+            run_results = []
+            print(f"\n===== {paradigm.upper()} EXPERIMENTS =====")
 
-        # Train model
-        start_time = time.time()
-        history = vgg16_model.train_model(train_gen, val_gen, epochs=10)
-        training_time = time.time() - start_time
-        minutes = int(training_time // 60)
-        hours = int(minutes // 60)
-        minutes = int(minutes % 60)
-        seconds = int(training_time % 60)
-        print(f"\nTraining completed in {hours}h {minutes}m {seconds}s")
+            for seed in seeds:
+                for batch_size in batch_sizes:
+                    print(
+                        f"\nStarting {paradigm} VGG16 run with seed {seed}, "
+                        f"batch size {batch_size}..."
+                    )
+                    np.random.seed(seed)
+                    tf.random.set_seed(seed)
 
-        # Plot training history
-        vgg16_model.plot_training_history()
+                    vgg16_model = SignLanguageVGG16(
+                        data_path='../datasets/final/train',
+                        img_size=(224, 224),
+                        batch_size=batch_size
+                    )
 
-        # Evaluate model
-        # accuracy = vgg16_model.evaluate_model(val_gen)
+                    train_gen, val_gen = vgg16_model.create_data_generators(
+                        use_augmentation=use_augmentation,
+                        seed=seed
+                    )
+                    model = vgg16_model.build_vgg16_model()
 
-        # print(f"\nFinal Validation Accuracy: {accuracy:.4f}")
+                    run_directory = os.path.join(
+                        result_directory,
+                        f'batch_{batch_size}',
+                        f'seed_{seed}'
+                    )
+                    os.makedirs(run_directory, exist_ok=True)
+                    start_time = time.time()
+                    history = vgg16_model.train_model(
+                        train_gen,
+                        val_gen,
+                        epochs=10,
+                        result_directory=run_directory
+                    )
+                    training_time = time.time() - start_time
+                    evaluated_accuracy = vgg16_model.evaluate_model(val_gen)
+
+                    model.save(os.path.join(run_directory, 'vgg16_model.keras'))
+                    with open(os.path.join(run_directory, 'training_history.pkl'), 'wb') as history_file:
+                        pickle.dump(history.history, history_file)
+
+                    run_result = {
+                        'paradigm': paradigm,
+                        'seed': seed,
+                        'batch_size': batch_size,
+                        'train_accuracy': history.history['accuracy'][-1],
+                        'validation_accuracy': evaluated_accuracy,
+                        'train_loss': history.history['loss'][-1],
+                        'validation_loss': history.history['val_loss'][-1],
+                        'training_time_seconds': training_time,
+                    }
+                    run_results.append(run_result)
+                    print(
+                        f"Run seed={seed}, batch={batch_size}: "
+                        f"validation accuracy={evaluated_accuracy:.4f}, "
+                        f"training time={training_time:.2f}s"
+                    )
+                    tf.keras.backend.clear_session()
+
+            with open(os.path.join(result_directory, 'vgg16_results.csv'), 'w', newline='') as results_file:
+                writer = csv.DictWriter(
+                    results_file,
+                    fieldnames=['paradigm', 'seed', 'batch_size', *metric_fields]
+                )
+                writer.writeheader()
+                writer.writerows(run_results)
+
+            with open(os.path.join(result_directory, 'vgg16_summary.csv'), 'w', newline='') as summary_file:
+                writer = csv.DictWriter(
+                    summary_file,
+                    fieldnames=['group', 'metric', 'mean', 'sample_standard_deviation', 'runs']
+                )
+                writer.writeheader()
+                summary_groups = [('All runs', run_results)]
+                summary_groups.extend(
+                    (
+                        f'Batch size {batch_size}',
+                        [result for result in run_results if result['batch_size'] == batch_size]
+                    )
+                    for batch_size in batch_sizes
+                )
+                for group, group_results in summary_groups:
+                    print(f"\n{paradigm} {group} summary (mean +/- sample standard deviation):")
+                    for field in metric_fields:
+                        values = [result[field] for result in group_results]
+                        mean = statistics.mean(values)
+                        standard_deviation = statistics.stdev(values)
+                        writer.writerow({
+                            'group': group,
+                            'metric': field,
+                            'mean': mean,
+                            'sample_standard_deviation': standard_deviation,
+                            'runs': len(values),
+                        })
+                        print(f"{field}: {mean:.4f} +/- {standard_deviation:.4f}")
+
         print("Model training and evaluation completed successfully!")
         
     except Exception as e:

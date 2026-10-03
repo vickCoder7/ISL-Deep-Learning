@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.keras
+*.h5
+*.pt
+datasets/
+yolo_models/yolo_dataset4/
+yolo_models/yolo_variable_boxes/
+yolo_models/runs/

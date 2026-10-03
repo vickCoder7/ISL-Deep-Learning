@@ -1,0 +1,21 @@
+% Results from 3 seeds (42, 17, 119) for each batch size.
+% Values are mean +/- sample standard deviation across runs.
+\begin{table}[htbp]
+    \centering
+    \caption{YOLOv8n performance on the manually annotated variable-box dataset across batch sizes. Results are reported as mean $\pm$ sample standard deviation over three random seeds. The final row aggregates all nine runs.}
+    \label{tab:yolov8n_variable_boxes_batch_size}
+    \begin{tabular}{lccccc}
+        \toprule
+        Batch size & mAP@0.5 & mAP@0.5:0.95 & Precision & Recall & F1-score \\
+        \midrule
+        8  & $0.4076 \pm 0.0072$ & $0.3106 \pm 0.0126$ & $0.6166 \pm 0.0719$ & $0.3466 \pm 0.0332$ & $\mathbf{0.4417 \pm 0.0307}$ \\
+        16 & $\mathbf{0.4543 \pm 0.0616}$ & $\mathbf{0.3481 \pm 0.0479}$ & $0.6233 \pm 0.0413$ & $0.3423 \pm 0.0285$ & $0.4404 \pm 0.0143$ \\
+        32 & $0.2386 \pm 0.0406$ & $0.1842 \pm 0.0327$ & $0.0406 \pm 0.0101$ & $\mathbf{0.7917 \pm 0.0000}$ & $0.0770 \pm 0.0183$ \\
+        \midrule
+        All runs ($n=9$) & $0.3669 \pm 0.1050$ & $0.2810 \pm 0.0801$ & $0.4268 \pm 0.2927$ & $0.4935 \pm 0.2247$ & $0.3197 \pm 0.1830$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+% Requires in the document preamble:
+% \usepackage{booktabs}

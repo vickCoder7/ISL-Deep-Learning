@@ -1,0 +1,25 @@
+\begin{table}[]
+    \centering
+    \caption{Performance of the trained DL models and training time for an 80\%--20\% split on the augmented dataset with 100 images per character. VGG16 values are mean $\pm$ sample standard deviation over three seed runs; percentages are shown for accuracy, precision, recall, and F1-score, and training time is in seconds.}
+    \vspace{0.8em}
+    \begin{tabular}{|l|c|c|c|c|c|c|}
+    \hline
+        Batch size & \multicolumn{2}{c|}{8} & \multicolumn{2}{c|}{16} & \multicolumn{2}{c|}{32} \\
+    \hline
+        Epochs & \multicolumn{2}{c|}{10} & \multicolumn{2}{c|}{10} & \multicolumn{2}{c|}{10} \\
+    \hline
+         & \textbf{VGG16} & \textbf{YOLOv8} & \textbf{VGG16} & \textbf{YOLOv8} & \textbf{VGG16} & \textbf{YOLOv8} \\
+    \hline
+        Learning rate & $1\mathrm{e}{-3}$ & - & $1\mathrm{e}{-3}$ & - & $1\mathrm{e}{-3}$ & - \\
+        Training accuracy & $94.71 \pm 0.31$ & - & $96.42 \pm 0.46$ & - & $97.59 \pm 0.26$ & - \\
+        Training loss & $0.1812 \pm 0.0227$ & - & $0.1121 \pm 0.0139$ & - & $0.0709 \pm 0.0032$ & - \\
+        mAP50 & - & $99.50 \pm 0.00$ & - & $99.50 \pm 0.00$ & - & $99.50 \pm 0.00$ \\
+        mAP50-95 / Validation accuracy & $97.18 \pm 1.31$ & $99.49 \pm 0.01$ & $97.78 \pm 0.77$ & $99.48 \pm 0.02$ & $98.47 \pm 0.24$ & $99.50 \pm 0.01$ \\
+        Validation loss & $0.0947 \pm 0.0234$ & - & $0.1097 \pm 0.0329$ & - & $0.1319 \pm 0.0380$ & - \\
+        Precision & $97.76 \pm 0.76$ & $99.69 \pm 0.04$ & $98.26 \pm 0.83$ & $99.70 \pm 0.01$ & $98.90 \pm 0.31$ & $99.70 \pm 0.03$ \\
+        Recall & $97.18 \pm 1.31$ & $100.00 \pm 0.00$ & $97.78 \pm 0.77$ & $100.00 \pm 0.00$ & $98.47 \pm 0.24$ & $100.00 \pm 0.00$ \\
+        F1-score & $97.03 \pm 1.49$ & $99.85 \pm 0.02$ & $97.68 \pm 0.77$ & $99.85 \pm 0.01$ & $98.38 \pm 0.23$ & $99.85 \pm 0.01$ \\
+        Training time (s) & $9483.06 \pm 2970.38$ & - & $9034.14 \pm 1049.97$ & - & $8980.54 \pm 1261.60$ & - \\
+    \hline
+    \end{tabular}
+\end{table}

@@ -13,23 +13,12 @@ import random
 from pathlib import Path
 # pyrefly: ignore [missing-import]
 import matplotlib.pyplot as plt
-# pyrefly: ignore [missing-import]
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 class SignLanguageYOLOPreprocessor:
     def __init__(self, source_dir="../datasets/final/train", output_dir="./yolo_dataset4", img_size=640):
         self.source_dir = source_dir
         self.output_dir = output_dir
         self.img_size = img_size
-        self.datagen = ImageDataGenerator(
-            rotation_range=20,
-            width_shift_range=0.2,
-            height_shift_range=0.2,
-            shear_range=0.2,
-            zoom_range=0.2,
-            horizontal_flip=False,
-            fill_mode='nearest'
-        )
         
         # Create class mapping for YOLO
         self.classes = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -85,9 +74,7 @@ class SignLanguageYOLOPreprocessor:
         
         # Place resized image in center
         img_padded[y_offset:y_offset + new_height, x_offset:x_offset + new_width] = img_resized
-        augmented = self.datagen.random_transform(img_padded)
-
-        return augmented, scale, x_offset, y_offset
+        return img_padded, scale, x_offset, y_offset
 
     def create_yolo_annotation(self, class_name, img_width, img_height):
         """
